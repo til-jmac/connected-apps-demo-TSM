@@ -19,7 +19,7 @@ function base64UrlDecode(str) {
 // we store our credentials needed for the creation of the JWT in a.env file.These are actually manually created as enviroment variables on the vercel server we use to host our web app
 module.exports = async (req, res) => {
   try {
-    const { CLIENT_ID, SECRET_ID, SECRET_VALUE } = process.env;
+    const { CLIENT_ID, SECRET_ID, SECRET_VALUE, WURL } = process.env;
 
     // Read username from request body
     const username = req.body.username || "default_username";
@@ -38,10 +38,10 @@ module.exports = async (req, res) => {
     // This is essentially creating a random string to be used as an indetifier for each JWT which we create so that feasibly they should not be created more than once in quick succession
     const jti = crypto.randomBytes(16).toString("hex");
 
-    // This is used as a timestamp to say when the JWT should be valid from/to 
+    // This is used as a timestamp to say when the JWT should be valid from/to
     const utcNowInSeconds = Math.floor(new Date().getTime() / 1000);
 
-    // This claimset is the bit that makes most of the decisions around who we're authenticating when they can view data and what their scope is. 
+    // This claimset is the bit that makes most of the decisions around who we're authenticating when they can view data and what their scope is.
     const claimSet = {
       sub: username,
       aud: "tableau",
@@ -68,12 +68,11 @@ module.exports = async (req, res) => {
     // We now create the JWT from the 3 different constructed parts
     const jwt = `${encodedHeader}.${encodedClaimSet}.${signature}`;
 
-    //We log the JWT to the console, this is purely for testing/demo purposes and definitely should not be done in production instances
+    //We log the JWT to the console, this is purely for testing/demo purposes and should not be done in production instances
     console.log("Final JWT:", jwt);
 
     // This is the workbook URL which is the viz we're ultimately going to display. This is returned outside of the function along with the signed JWT
-    const wurl =
-      "https://tableauserver.theinformationlab.co.uk/t/til2/views/ConnectedAppsEmbeddingDashboard_16944436848360/Superstoredashboard";
+    const wurl = WURL;
 
     return res.json({ jwt, wurl });
   } catch (error) {
