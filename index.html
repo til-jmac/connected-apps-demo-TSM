@@ -1,0 +1,140 @@
+<html>
+
+<head>
+  <link rel="icon" type="image/png" href=".\img\favicon.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<!-- Here the Javascript api v3 is brought into the HTML -->
+<script type="module"
+  src="https://tableauserver.theinformationlab.co.uk/javascripts/api/tableau.embedding.3.latest.min.js"></script>
+<!-- bringing in crypto package ensuring that the files have not been tampered with -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"
+  integrity="sha512-E8QSvWZ0eCLGk4km3hxSsNmGWbLtSCSUcewDQPQWZF6pEU8GlT8a5fF32wOl1i8ftdMhssTrF/OhyGWwonTcXA=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- bringing in bootstrap for ease of css formatting -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+  integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous" />
+
+<!-- This function moves our user login interface to the top of the page when we load the dashbaord, it basically just moves out of the way -->
+<script>
+  function moveToTop() {
+    const wrapper = document.getElementById("wrapper");
+    wrapper.classList.add("moveToTop");
+  }
+
+  // This is just wrapping our button in a blank function which ensures that we add our event listener to the 'show me' button once it's actually fully loaded in.
+  document.addEventListener("DOMContentLoaded", function () {
+    document
+      .getElementById("showme")
+      .addEventListener("click", loadDashboard);
+  });
+
+  // This function is responsible for loading our tableau dashboard by making a call to our 'api' that we've built in vercel and retrieving our newly created JWT and workbook URL 
+  async function loadDashboard() {
+    const username = document.getElementById("userid").value;
+
+    const response = await fetch("/api/tableauProxy", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username }),
+    });
+
+    if (response.ok) {
+      const { jwt, wurl } = await response.json();
+      document.getElementById("jwt").value = jwt;
+
+      // This is essentially the embed code responsible for interacting with V3 API, we can add extra params in here to edit our view.
+      let tp = `
+          <tableau-viz id="tableauViz"
+            src="${wurl}"
+            token="${jwt}"
+            height="85vh"
+            width="95vw"
+            toolbar="hidden"
+            hide-tabs>
+          </tableau-viz>`;
+
+      document.getElementById("dash").innerHTML = tp;
+      moveToTop();
+
+      // After the dashboard is loaded, update the height of the #dash div so that there is no overlaps
+      const tableauViz = document.getElementById("tableauViz");
+      if (tableauViz) {
+        tableauViz.addEventListener("load", function () {
+          const newHeight = tableauViz.clientHeight;
+          document.getElementById("dash").style.height = `${newHeight}px`;
+        });
+      }
+      addNewSection();
+    } else {
+      console.error("An error occurred:", await response.json());
+    }
+  }
+</script>
+
+<!-- This is the base HTML of the page before the JS edits a lot of it and before we bring in the Tableau Dashboard -->
+
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">
+      <img src="./img/favicon.png" width="30" height="30" class="d-inline-block align-top" alt="" />
+      The Information Lab
+    </a>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item active">
+          <a class="nav-link" href="https://www.theinformationlab.co.uk/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://www.theinformationlab.co.uk/">Licenses</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://www.theinformationlab.co.uk/">Training</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://www.theinformationlab.co.uk/">Consultancy</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://www.thedataschool.co.uk/">Data School</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div id="wrapper" class="start-middle">
+    <div id="headingGroup" class="text-black text-center d-none d-lg-block mt-3">
+      <h1>THE INFORMATION LAB CONNECTED APPS</h1>
+    </div>
+    <div class="form-group row align-items-center">
+      <div class="col-auto">
+        <!-- This section is very important as it provides the username to the JWT to load the users content as desired -->
+        <input class="form-control" type="text" id="userid" name="userid" placeholder="enter tableau username" />
+      </div>
+      <div class="col-auto">
+        <!-- This is COMPLETELY USELESS AND DOES NOTHING it was put on request of sales to feign an added element of security -->
+        <input type="password" class="form-control" id='userpword' placeholder="Enter Password">
+      </div>
+      <div class="col-auto">
+        <!-- Button which actually triggers the javascript to run -->
+        <input id="showme" type="submit" value="Go to Dashboard" />
+      </div>
+      <!-- I have left the JWT in as a means of testing and showing what it looks like for the demo, can put it into JWT debugger in order to better understanmd JWT -->
+      <input type="hidden" id="jwt" />
+    </div>
+  </div>
+
+  <div id="dash"></div>
+
+  <!-- Utilising bootstrap to make things a bit easier. -->
+  <footer class="footer bg-light text-center text-lg-start">
+    <div class="container p-2">
+      <span id="footerspan">Contact Us</span>|
+      <span id="footerspan"> info@theinformationlab.co.uk</span>|
+      <span id="footerspan"> 08453 888 289</span>
+    </div>
+  </footer>
+</body>
+
+</html>
